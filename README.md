@@ -16,11 +16,14 @@ Log4 USB and POE Serial Output
 Takes in serial information from Log4 USB or POE device then
 displays measurements on RaspberryPi python terminal.
 
-Units supported
+#### Units supported
 
  * Current - "uA", "mA", "A"
  * Voltage - "mV", "V"
  * Power - "mW", "W"
 
-Dependencies
+#### Dependencies
  * pyserial
+
+## Log4 Serial Communication Protocol
+In order to understand more about the general protocol followed by Log4 Devices for communication over Serial connection, __[click here](docs/Tektyte-Log4-Serial-Communications-Protocol.pdf)__.
