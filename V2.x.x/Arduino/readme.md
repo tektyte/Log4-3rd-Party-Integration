@@ -5,7 +5,7 @@
 
 ## Requirements
 
-* Log4 USB or Log4 PoE
+* Log4 USB or Log4 PoE with FW 2.x.x
 * Arduino Mega 2560
 * 4 Male-Male jumper cables
 * Serial Monitor

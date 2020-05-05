@@ -15,7 +15,7 @@ displays measurements on RaspberryPi python terminal.
 ​
 ## Requirements
 ​
-* Log4 USB or Log4 PoE
+* Log4 USB or Log4 PoE with FW 2.x.x
 * Micro-USB B to USB A-type cable
 * RaspberryPi 2 or 3
 * Python 2 or 3
