@@ -1,10 +1,10 @@
 /*
  Log4 USB and POE Serial Output
 
- Takes in serial information from Log4 USB or POE device then
+ Takes in serial information from Log4 USB or POE device (FW = 2.x.x) then
  displays measurements on Arduino Serial Monitor.
 
- created 2017
+ created 2020
  by Tekt Industries
 
  This example code is in the public domain.
@@ -21,9 +21,11 @@ GND pin
 #define COLON 58
 #define ADDRESS 1
 #define SLAVE_CMD 11
-#define DATA_COUNT_USB 20
-#define DATA_COUNT_POE 32
+#define DATA_COUNT_USB 18
+#define DATA_COUNT_POE 26
 #define END 10
+
+#define SET_STREAMING_MODE_CMD 0x11
 
 uint8_t start_byte;
 uint8_t address_byte;
@@ -32,10 +34,8 @@ uint8_t data_count_byte;
 uint8_t data_byte[32];
 uint8_t current_byte_A[4];
 uint8_t voltage_byte_A[4];
-uint8_t power_byte_A[4];
 uint8_t current_byte_B[4];
 uint8_t voltage_byte_B[4];
-uint8_t power_byte_B[4];
 uint8_t end_byte;
 
 float current_A;
@@ -60,15 +60,32 @@ int32_t convert_to_int32(uint8_t * buff) {
     return integer;
 }
 
+//Set Streaming Mode is only for Log4 F.W. = 2.X.X
+// Enable Streaming mode by passing true otherwise false.
+void set_streaming_mode(bool mode){
+    uint8_t streaming_mode = 0;
+    if (mode)
+    {
+        streaming_mode = 1;
+    }
+    uint8_t out_buffer[6];
+    out_buffer[0] = COLON;
+    out_buffer[1] = ADDRESS;
+    out_buffer[2] = SET_STREAMING_MODE_CMD;
+    out_buffer[3] = 1;
+    out_buffer[4] = streaming_mode;
+    out_buffer[5] = END;
+    Serial1.write(out_buffer,sizeof(out_buffer));
+}
+
 void print_measurements(uint8_t data_length) {
-    for (int i=8; i<12; i++) {
-        current_byte_A[i-8]=data_byte[i];
-        voltage_byte_A[i-8]=data_byte[i+4];
-        power_byte_A[i-8]=data_byte[i+8];
+    for (int i=10; i<14; i++) {
+        current_byte_A[i-10]=data_byte[i];
+        voltage_byte_A[i-10]=data_byte[i+4];
     }
     current_A=convert_to_int32(current_byte_A)/float(1000);
     voltage_A=convert_to_int32(voltage_byte_A)/float(1000);
-    power_A=convert_to_int32(power_byte_A)/float(1000);
+    power_A = current_A * voltage_A;
     if (data_length==DATA_COUNT_USB) {
         Serial.println("Log4_USB device");
         Serial.print(current_A);
@@ -80,14 +97,13 @@ void print_measurements(uint8_t data_length) {
     }
     else if (data_length==DATA_COUNT_POE) {
         Serial.println("Log4_POE device");
-        for (int i=8; i<12; i++) {
-            current_byte_B[i-8]=data_byte[i+12];
-            voltage_byte_B[i-8]=data_byte[i+16];
-            power_byte_B[i-8]=data_byte[i+20];
+        for (int i=10; i<14; i++) {
+            current_byte_B[i-10]=data_byte[i+8];
+            voltage_byte_B[i-10]=data_byte[i+12];
         }
         current_B=convert_to_int32(current_byte_B)/float(1000);
         voltage_B=convert_to_int32(voltage_byte_B)/float(1000);
-        power_B=convert_to_int32(power_byte_B)/float(1000);
+        power_B= current_B * voltage_B;
         Serial.println("Channel A");
         Serial.print(current_A);
         Serial.println(" mA");
@@ -108,8 +124,11 @@ void print_measurements(uint8_t data_length) {
 void setup() {
     Serial.begin(115200);
     Serial1.begin(115200);
+    while (!Serial); // wait for Serial device to be ready
+    while (!Serial1); // wait for Serial1 device to be ready
+    Serial.println("Enabling Streaming Mode");
+    set_streaming_mode(true);
 }
-
 
 void loop() {
     static enum decode_state dec = START_BYTE;
@@ -118,7 +137,7 @@ void loop() {
     static uint8_t data_byte_idx=0;
 
     if (Serial1.available()>0) {     // If anything comes in Serial1 (pins 0 & 1)
-        uint8_t read_byte =Serial1.read();
+        uint8_t read_byte = Serial1.read();
         switch(dec) {
         case START_BYTE:
             if(read_byte == COLON) {
@@ -140,7 +159,6 @@ void loop() {
             if(read_byte == SLAVE_CMD) {
                 cur_cmd=read_byte;
                 dec = DATA_COUNT_BYTE;
-
             }
             else {
                 dec=START_BYTE;
@@ -179,4 +197,3 @@ void loop() {
         }
     }
 }
-
