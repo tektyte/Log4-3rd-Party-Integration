@@ -29,4 +29,6 @@ displays measurements on RaspberryPi python terminal.
  * pyserial
 
 ## Log4 Serial Communication Protocol
-In order to understand more about the general protocol followed by Log4 Devices (FW 1.x.x) for communication over Serial connection, __[click here](docs/Tektyte-Log4-Serial-Communications-Protocol.pdf)__.
+Log4 Devices follows specific serial protocols depending on their firmware. Checkout the firmware specific serial protocol below -
+* __[Serial Protocol V2.0 for latest FW 2.x.x](docs/Tektyte-Log4-Serial-Communications-Protocol-v2.0.pdf)__
+* __[Serial Protocol V1.0 for legacy FW 1.x.x](docs/Tektyte-Log4-Serial-Communications-Protocol-v1.0.pdf)__
