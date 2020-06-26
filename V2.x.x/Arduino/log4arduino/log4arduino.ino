@@ -25,7 +25,15 @@ GND pin
 #define DATA_COUNT_POE 26
 #define END 10
 
+/*
+Time between keep alive messages, device will stop streaming if no KEEP_ALIVE message is received within 2000ms
+*/
+#define KEEP_ALIVE_INTERVAL_MS 500
+
+unsigned long last_updated_time;
+
 #define SET_STREAMING_MODE_CMD 0x11
+#define KEEP_ALIVE_CMD 0x02
 
 uint8_t start_byte;
 uint8_t address_byte;
@@ -75,6 +83,17 @@ void set_streaming_mode(bool mode){
     out_buffer[3] = 1;
     out_buffer[4] = streaming_mode;
     out_buffer[5] = END;
+    Serial1.write(out_buffer,sizeof(out_buffer));
+}
+
+// Send Keep Alive to keep streaming mode open
+void keep_alive(void){
+    uint8_t out_buffer[5];
+    out_buffer[0] = COLON;
+    out_buffer[1] = ADDRESS;
+    out_buffer[2] = KEEP_ALIVE_CMD;
+    out_buffer[3] = 0;
+    out_buffer[4] = END;
     Serial1.write(out_buffer,sizeof(out_buffer));
 }
 
@@ -128,6 +147,7 @@ void setup() {
     while (!Serial1); // wait for Serial1 device to be ready
     Serial.println("Enabling Streaming Mode");
     set_streaming_mode(true);
+    last_updated_time = millis();
 }
 
 void loop() {
@@ -135,6 +155,13 @@ void loop() {
     static uint8_t cur_cmd=0;
     static uint8_t cur_len=0;
     static uint8_t data_byte_idx=0;
+
+    unsigned long now = millis();
+
+    if ((now - last_updated_time) > KEEP_ALIVE_INTERVAL_MS) {
+        last_updated_time = now;
+        keep_alive();
+    }
 
     if (Serial1.available()>0) {     // If anything comes in Serial1 (pins 0 & 1)
         uint8_t read_byte = Serial1.read();

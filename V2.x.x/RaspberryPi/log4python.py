@@ -20,6 +20,9 @@ import struct
 import datetime
 import time
 
+# Time between keep alive messages, device will stop streaming if no KEEP_ALIVE message is received within 2000ms
+KEEP_ALIVE_INTERVAL_S = 0.5
+
 SLAVE_CMD = 11
 
 def serialConnect(serialdevice):
@@ -45,6 +48,7 @@ class Log4Device:
     SET_STREAM_CMD_STRUCT = struct.Struct("<BBBBBB")
     SLAVE_DATA_USB_STRUCT = struct.Struct("<QHii")
     SLAVE_DATA_POE_STRUCT = struct.Struct("<QHiiii")
+    KEEP_ALIVE = struct.Struct("<BBBBB")
 
     def __init__(self):
         self.current=0.0
@@ -73,6 +77,9 @@ class Log4Device:
 
     def setStreaming(self, serialdevice, streaming):
         serialdevice.write(Log4Device.SET_STREAM_CMD_STRUCT.pack(0x3A, 0x01, 0x11, 0x01, 0x01 if streaming else 0x00, 0x0A))
+
+    def keepAlive(selfself, serialdevice):
+        serialdevice.write(Log4Device.KEEP_ALIVE.pack(0x3A, 0x01, 0x02, 0x00, 0x0A))
 
     def measure(self, serialdevice):
         byte_read = serialdevice.read()
@@ -118,8 +125,13 @@ if __name__ == '__main__':
     if device:
         device.flushInput()
         log4usb.setStreaming(device, True)
+        last_keep_alive_time = datetime.datetime.now()
         try:
             while True:
+                now = datetime.datetime.now()
+                if (now - last_keep_alive_time).seconds > KEEP_ALIVE_INTERVAL_S:
+                    last_keep_alive_time = now
+                    log4usb.keepAlive(device)
                 log4usb.measure(device)
                 if log4usb.device == "Log4 PoE":
                     print(datetime.datetime.fromtimestamp(log4usb.timestamp).strftime("%Y-%m-%d %H:%M:%S.%f"))
